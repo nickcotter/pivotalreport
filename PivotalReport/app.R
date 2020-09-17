@@ -5,6 +5,21 @@ library(wordcloud)
 library(RColorBrewer)
 library(dplyr)
 library(ggplot2)
+library(config)
+
+getDefaultProjectId <- function() {
+    tryCatch({
+        config::get("pivotal-tracker")$projectId
+    }, error=function(err) {
+    })
+}
+
+getDefaultToken <- function() {
+    tryCatch({
+        config::get("pivotal-tracker")$token
+    }, error=function(err) {
+    })
+}
 
 makePivotalTrackerRequest <- function(projectId, token, path) {
     url <- paste("https://www.pivotaltracker.com/services/v5/projects/", projectId, path, sep="")
@@ -52,8 +67,8 @@ ui <- dashboardPage(
     
     dashboardSidebar(
         
-        textInput("projectId", "Project ID"),
-        textInput("token", "Token")
+        textInput(inputId = "projectId", label = "Project ID", value = getDefaultProjectId()),
+        textInput(inputId = "token", label = "Token", value = getDefaultToken())
         
     ),
     
