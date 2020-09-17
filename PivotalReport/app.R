@@ -28,6 +28,10 @@ makePivotalTrackerRequest <- function(projectId, token, path) {
     fromJSON(json, flatten = TRUE)
 }
 
+getIterations <- function(projectId, token) {
+    makePivotalTrackerRequest(projectId, token, "/iterations?limit=50&offset=100")
+}
+
 getIteration <- function(projectId, token, iterationNumber) {
     path <- paste("/iterations/", iterationNumber, sep="")
     makePivotalTrackerRequest(projectId, token, path)
@@ -68,7 +72,8 @@ ui <- dashboardPage(
     dashboardSidebar(
         
         textInput(inputId = "projectId", label = "Project ID", value = getDefaultProjectId()),
-        textInput(inputId = "token", label = "Token", value = getDefaultToken())
+        textInput(inputId = "token", label = "Token", value = getDefaultToken()),
+        textInput(inputId = "iterationNumber", label="Iteration")
         
     ),
     
@@ -87,7 +92,7 @@ ui <- dashboardPage(
 server <- function(input, output) {
 
     currentIteration <- reactive({
-        getIteration(input$projectId, input$token, 211)
+        getIteration(input$projectId, input$token, input$iterationNumber)
     })
     
     currentIterationLabels <- reactive({
