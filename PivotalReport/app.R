@@ -98,8 +98,11 @@ ui <- dashboardPage(
         
         tabsetPanel(
             tabPanel("Overview", value="overviewTab",
-                     plotOutput("wordCloud"),
-                     plotOutput("frequency")
+                     fluidRow(align="center",
+                              helpText("Capacity"),
+                              h2(textOutput("iterationCapacity"))),
+                     plotOutput("wordCloud")
+                     #plotOutput("frequency")
             ),
             tabPanel("Defects", value="defectsTab",
                      fluidRow(align="center",
@@ -153,6 +156,20 @@ server <- function(input, output) {
                 "-"
             }
         )
+    })
+    
+    output$iterationCapacity <- renderText({
+        if(input$iterationNumber > 0) {
+            tryCatch(
+                {
+                    capacity <- currentIteration()$team_strength 
+                    rate <- round(100 * capacity, digits = 0)
+                    paste(rate, "%")
+                }, error=function(err) {
+                    "-"
+                }
+            )
+        }
     })
     
     output$unfixedDefectCount <- renderText({
