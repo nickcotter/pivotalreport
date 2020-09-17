@@ -6,12 +6,16 @@ library(RColorBrewer)
 library(dplyr)
 library(ggplot2)
 
-
-getIteration <- function(projectId, token) {
-    url <- paste("https://www.pivotaltracker.com/services/v5/projects/", projectId, "/iterations/211", sep="")
+makePivotalTrackerRequest <- function(projectId, token, path) {
+    url <- paste("https://www.pivotaltracker.com/services/v5/projects/", projectId, path, sep="")
     req <- httr::GET(url, httr::add_headers('X-TrackerToken' = token))
     json <- httr::content(req, as = "text")
     fromJSON(json, flatten = TRUE)
+}
+
+getIteration <- function(projectId, token, iterationNumber) {
+    path <- paste("/iterations/", iterationNumber, sep="")
+    makePivotalTrackerRequest(projectId, token, path)
 }
 
 getLabels <- function(iteration) {
@@ -68,7 +72,7 @@ ui <- dashboardPage(
 server <- function(input, output) {
 
     currentIteration <- reactive({
-        getIteration(input$projectId, input$token)
+        getIteration(input$projectId, input$token, 211)
     })
     
     currentIterationLabels <- reactive({
