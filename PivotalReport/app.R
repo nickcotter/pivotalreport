@@ -32,6 +32,23 @@ getIterations <- function(projectId, token) {
     makePivotalTrackerRequest(projectId, token, "/iterations?limit=50&offset=100")
 }
 
+getUnstartedBugs <- function(projectId, token) {
+    makePivotalTrackerRequest(projectId, token, "/stories?with_state=unstarted&with_story_type=bug")
+}
+
+getUnscheduledBugs <- function(projectId, token) {
+    makePivotalTrackerRequest(projectId, token, "/stories?with_state=unscheduled&with_story_type=bug")
+}
+
+getBugsFixedInIteration <- function(iteration) {
+    
+    acceptedBugs <- iteration$stories %>% 
+        filter(current_state == 'accepted') %>% 
+        filter(story_type == 'bug')
+               
+    length(acceptedBugs$id)
+}
+
 getIteration <- function(projectId, token, iterationNumber) {
     path <- paste("/iterations/", iterationNumber, sep="")
     makePivotalTrackerRequest(projectId, token, path)
@@ -82,7 +99,19 @@ ui <- dashboardPage(
         tabsetPanel(
             tabPanel("Overview", value="overviewTab",
                      plotOutput("wordCloud"),
-                     plotOutput("frequency"))
+                     plotOutput("frequency")
+            ),
+            tabPanel("Defects", value="defectsTab",
+                     fluidRow(align="center",
+                              helpText("Defects Fixed"),
+                              h2(textOutput("fixedDefectCount"))),
+                     fluidRow(align="center",
+                              helpText("Unfixed Defects"),
+                              h2(textOutput("unfixedDefectCount"))),
+                     fluidRow(align="center",
+                              helpText("Defect Removal Rate"),
+                              h2(textOutput("defectRemovalRate")))
+            )
         )
         
     )
@@ -99,12 +128,55 @@ server <- function(input, output) {
         getLabels(currentIteration())  
     })
     
+    unfixedBugCount <- reactive({
+        
+        unstartedCount <- length(getUnstartedBugs(input$projectId, input$token)$id)
+        unscheduledCount <- length(getUnscheduledBugs(input$projectId, input$token)$id)
+        
+        unstartedCount + unscheduledCount
+    })
+    
+    
     output$wordCloud <- renderPlot({
         tryOrIgnore(createWordCloud(currentIterationLabels()))
     })
     
     output$frequency <- renderPlot({
         tryOrIgnore(plotFrequency(currentIterationLabels()))
+    })
+    
+    output$fixedDefectCount <- renderText({
+        tryCatch(
+            {
+                getBugsFixedInIteration(currentIteration())      
+            }, error=function(err) {
+                "-"
+            }
+        )
+    })
+    
+    output$unfixedDefectCount <- renderText({
+        tryCatch(
+            {
+                unfixedBugCount()      
+            }, error=function(err) {
+                "-"
+            }
+        )
+    })
+    
+    output$defectRemovalRate <- renderText({
+        tryCatch(
+            {
+                unfixed <- unfixedBugCount() 
+                fixed <- getBugsFixedInIteration(currentIteration())
+                total <- unfixed + fixed
+                rate <- round(100 * fixed/total, digits = 0)
+                paste(rate, "%")
+            }, error=function(err) {
+                "-"
+            }
+        )
     })
     
 }
